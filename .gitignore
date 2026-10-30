@@ -15,31 +15,24 @@ env/
 .env.*
 !.env.example
 
-# Backups and generated artifacts
+# Backups
 backups/
+backups_*/
+*.backup_*
+*_backup_*.py
+*_backup_*.md
+*_before_*.py
+*.bak
+
+# Generated artifacts
 build/
 dist/
-*.spec
 
 # IDE and operating-system files
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
-
-# Historical local backups (keep locally, do not commit)
-backups/
-backups_*/
-backups_*/
-backups_log_update/
-backups_read_range/
-backups_stable_*/
-*.backup_*
-*_backup_*.py
-*_before_*.py
-
-# Historical backup files
-*.bak
 
 # Local test artifact
 demo_note.txt
