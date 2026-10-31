@@ -129,10 +129,18 @@ def search_project(
     matches = []
     scanned_files = 0
     stopped_by_limit = False
+    traversal_errors = []
     needle = query.casefold()
 
+    def handle_walk_error(error):
+        """记录目录遍历异常，不暴露完整本地路径。"""
+        traversal_errors.append(type(error).__name__)
+
     for current_dir, dir_names, file_names in os.walk(
-        root, topdown=True, followlinks=False
+        root,
+        topdown=True,
+        onerror=handle_walk_error,
+        followlinks=False,
     ):
         current_path = Path(current_dir)
 
@@ -211,5 +219,11 @@ def search_project(
         result += f"\n提示：已达到最多扫描 {MAX_FILES_SCANNED} 个文件的限制。"
     elif len(matches) >= max_results:
         result += f"\n提示：已达到最多返回 {max_results} 条结果的限制。"
+
+    if traversal_errors:
+        result += (
+            f"\n提示：有 {len(traversal_errors)} 个目录遍历操作发生异常，"
+            "搜索结果可能不完整。"
+        )
 
     return result
