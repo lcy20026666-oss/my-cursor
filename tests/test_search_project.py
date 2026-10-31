@@ -142,6 +142,48 @@ class TestSearchProject(unittest.TestCase):
         for name in names:
             self.assertNotIn(f"{name}:", result)
 
+    def test_walk_permission_error_is_reported(self):
+        """目录遍历发生权限异常时，应提示搜索结果可能不完整。"""
+        from unittest.mock import patch
+
+        def fake_walk(*args, **kwargs):
+            error = PermissionError("模拟目录访问被拒绝")
+            kwargs["onerror"](error)
+            yield str(self.root), [], []
+
+        with patch("tools.search_project.os.walk", side_effect=fake_walk):
+            result = search_project(self.root, "missing_keyword")
+
+        self.assertIn("搜索结果可能不完整", result)
+        self.assertIn("有 1 个目录遍历操作发生异常", result)
+        self.assertNotIn("模拟目录访问被拒绝", result)
+
+    def test_multiple_walk_errors_are_counted(self):
+        """多个目录遍历异常应正确累计数量。"""
+        from unittest.mock import patch
+
+        def fake_walk(*args, **kwargs):
+            kwargs["onerror"](PermissionError("模拟异常一"))
+            kwargs["onerror"](OSError("模拟异常二"))
+            yield str(self.root), [], []
+
+        with patch("tools.search_project.os.walk", side_effect=fake_walk):
+            result = search_project(self.root, "missing_keyword")
+
+        self.assertIn("有 2 个目录遍历操作发生异常", result)
+        self.assertIn("搜索结果可能不完整", result)
+
+    def test_normal_search_has_no_walk_error_warning(self):
+        """正常搜索不应显示目录遍历异常提示。"""
+        self.write_file("normal.py", "normal_search_marker\\n")
+
+        result = search_project(self.root, "normal_search_marker")
+
+        self.assertIn("normal.py:1:", result)
+        self.assertNotIn("搜索结果可能不完整", result)
+        self.assertNotIn("目录遍历操作发生异常", result)
+
 
 if __name__ == "__main__":
     unittest.main()
+
